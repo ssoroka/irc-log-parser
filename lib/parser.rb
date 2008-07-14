@@ -1,4 +1,6 @@
 #!/usr/bin/env ruby
+require 'rubygems'
+require 'chronic'
 
 class Parser
   LOOK_AHEAD = 100
@@ -10,11 +12,11 @@ class Parser
   LEAVE_LINE = /\[([\d\:]+)\] (.*?) \(.*?\) left .+$/
   CHAT_LINE = /\[([\d\:]+)\] \<(.*?)\> (.*)$/
   
-  attr_accessor :lines, :conversations, :nicklist
+  attr_accessor :lines, :conversations, :nick_list
   def initialize(text)
+    @nick_list = []
     objectify(text)
-    extract_conversations(@lines)
-    @nicklist = []
+    extract_conversations
   end
 
   def objectify(text)
@@ -23,16 +25,17 @@ class Parser
       case l
       when CHAT_LINE:
         add_nick($2)
-        @lines << Line.new($1, $2, $3, @nicklist)
+        @lines << Line.new($1, $2, $3, @nick_list)
         # l = Line.new(l.scan(CHAT_LINE).first)
         
         # add_nick(l.name)
-        # l.nicklist = @nicklist.dup
+        # l.nick_list = @nick_list.dup
         # @lines << l
       when JOIN_LINE:
-        add_nick($1)
+        add_nick($2)
       when LEAVE_LINE:
-        remove_nick($1)
+        remove_nick($2)
+      end
     }
   end
   
@@ -40,11 +43,11 @@ class Parser
     @conversations = []
     @lines.each_with_index{|start_line, start|
       if start_line.question?
-        @lines[(start + 1)..(start + LOOK_AHEAD)].each_with_index{|end_line, end|
+        @lines[(start + 1)..(start + LOOK_AHEAD)].each_with_index{|end_line, end_index|
           if start_line.name == end_line.name && end_line.thanks?
-            convo = @lines[start..end]
+            convo = @lines[start..end_index]
             responders = convo.select{|cline| cline.text[0..(start_line.name.size - 1)]}
-            c = Conversation.new(:asker => line.name, :responders => )
+            # c = Conversation.new(:asker => line.name, :responders => )
             break
           end
         }
@@ -53,11 +56,11 @@ class Parser
   end
   
   def add_nick(nick)
-    @nicklist << nick unless @nicklist.include?(nick)
+    @nick_list << nick unless @nick_list.include?(nick)
   end
 
   def remove_nick(nick)
-    @nicklist.delete(nick)
+    @nick_list.delete(nick)
   end
 end
 
@@ -67,10 +70,10 @@ class Line
   AFFIRMATIVE = /\b(yes|yeah|yep)\b/
   NEGATIVE = /\b(no|nope|didn't work)\b/
   
-  attr_accessor :time, :name, :text, :nicklist, :classifications
+  attr_accessor :time, :name, :text, :nick_list, :classifications
 
   def initialize(time, name, text, nick_list)
-    @time, @name, @text, @nicklist = Chronic.parse(time), name, text, nicklist.dup
+    @time, @name, @text, @nick_list = Chronic.parse(time), name, text, nick_list.dup
     classify
   end
   
@@ -81,8 +84,8 @@ class Line
   end
   
   def method_missing(m, *a, &b)
-    if m =~ /\?$/ && Line.constants.include?(m[0..-2].upcase)
-      @classiications.include?(m[0..-2])
+    if m.to_s =~ /\?$/ && Line.constants.include?(m.to_s[0..-2].upcase)
+      @classifications.include?(m.to_s[0..-2])
     else
       super(m, *a, &b)
     end
