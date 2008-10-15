@@ -7,7 +7,7 @@ class Parser
 
   # [00:48] tobago (n=Chris@unaffiliated/tobago) joined #rubyonrails.
   JOIN_LINE = /\[[\d\:]+\] (.*?) \(.*?\) joined \#.+$/
-  # [00:55] mrkris (n=mrkris@c-24-19-164-97.hsd1.wa.comcast.net) left irc: 
+  # [00:55] mrkris (n=mrkris@c-24-19-164-97.hsd1.wa.comcast.net) left irc:
   # [01:10] skindogz (n=skindogz@c-71-197-28-22.hsd1.mi.comcast.net) left #rubyonrails.
   LEAVE_LINE = /\[([\d\:]+)\] (.*?) \(.*?\) left .+$/
   CHAT_LINE = /\[([\d\:]+)\] \<(.*?)\> (.*)$/
